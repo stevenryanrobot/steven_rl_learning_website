@@ -1,13 +1,15 @@
-// Simple Q-Learning implementation for grid world
+// 强化学习交互演示 - Q-Learning 网格世界
+
+// Q-Learning 智能体类
 class QLearningAgent {
     constructor(states, actions, alpha = 0.1, gamma = 0.9, epsilon = 0.1) {
         this.states = states;
         this.actions = actions;
-        this.alpha = alpha; // learning rate
-        this.gamma = gamma; // discount factor
-        this.epsilon = epsilon; // exploration rate
+        this.alpha = alpha; // 学习率
+        this.gamma = gamma; // 折扣因子
+        this.epsilon = epsilon; // 探索率
         
-        // Initialize Q-table with zeros
+        // 初始化 Q 表
         this.qTable = {};
         states.forEach(state => {
             this.qTable[state] = {};
@@ -17,13 +19,13 @@ class QLearningAgent {
         });
     }
     
+    // 选择动作（epsilon-greedy 策略）
     chooseAction(state) {
-        // Epsilon-greedy policy
         if (Math.random() < this.epsilon) {
-            // Explore: random action
+            // 探索：随机动作
             return this.actions[Math.floor(Math.random() * this.actions.length)];
         } else {
-            // Exploit: best known action
+            // 利用：最优动作
             let bestAction = this.actions[0];
             let bestValue = this.qTable[state][bestAction];
             
@@ -38,6 +40,7 @@ class QLearningAgent {
         }
     }
     
+    // 学习更新
     learn(state, action, reward, nextState) {
         const currentQ = this.qTable[state][action];
         const maxNextQ = Math.max(...this.actions.map(a => this.qTable[nextState][a]));
@@ -46,14 +49,19 @@ class QLearningAgent {
     }
 }
 
-// Grid world visualization
+// 网格世界环境
 class GridWorld {
-    constructor(width, height) {
+    constructor(width = 5, height = 5) {
         this.width = width;
         this.height = height;
         this.agentPos = {x: 0, y: 0};
         this.goalPos = {x: width-1, y: height-1};
-        this.obstacles = [];
+        this.obstacles = [
+            {x: 1, y: 1},
+            {x: 2, y: 1},
+            {x: 3, y: 2},
+            {x: 1, y: 3}
+        ];
     }
     
     getState() {
@@ -62,9 +70,9 @@ class GridWorld {
     
     getReward() {
         if (this.agentPos.x === this.goalPos.x && this.agentPos.y === this.goalPos.y) {
-            return 10; // Goal reached
+            return 10; // 到达目标
         }
-        return -1; // Step penalty
+        return -0.1; // 每步惩罚，鼓励最短路径
     }
     
     isTerminal() {
@@ -89,13 +97,16 @@ class GridWorld {
                 break;
         }
         
-        // Check for obstacles
-        const obstacleIndex = this.obstacles.findIndex(obs => 
+        // 检查障碍物
+        const hitObstacle = this.obstacles.some(obs => 
             obs.x === this.agentPos.x && obs.y === this.agentPos.y
         );
-        if (obstacleIndex !== -1) {
-            this.agentPos = oldPos; // Hit obstacle, stay in place
+        if (hitObstacle) {
+            this.agentPos = oldPos; // 撞到障碍物，留在原地
+            return -1; // 额外惩罚
         }
+        
+        return 0;
     }
     
     reset() {
@@ -103,72 +114,191 @@ class GridWorld {
     }
 }
 
-// DOM interaction
-document.addEventListener('DOMContentLoaded', function() {
-    const demoBtn = document.getElementById('demoBtn');
-    const gridContainer = document.getElementById('gridWorld');
-    
-    if (demoBtn && gridContainer) {
-        demoBtn.addEventListener('click', runDemo);
-    }
-    
-    function runDemo() {
-        const grid = new GridWorld(5, 5);
-        const states = [];
-        for (let x = 0; x < 5; x++) {
-            for (let y = 0; y < 5; y++) {
-                states.push(`${x},${y}`);
+// 可视化控制器
+class GridWorldVisualizer {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) {
+            console.error('Canvas not found:', canvasId);
+            return;
+        }
+        this.ctx = this.canvas.getContext('2d');
+        this.cellSize = 80;
+        this.grid = new GridWorld(5, 5);
+        
+        this.states = [];
+        for (let x = 0; x < this.grid.width; x++) {
+            for (let y = 0; y < this.grid.height; y++) {
+                this.states.push(`${x},${y}`);
             }
         }
-        const actions = ['up', 'down', 'left', 'right'];
-        const agent = new QLearningAgent(states, actions);
+        this.actions = ['up', 'down', 'left', 'right'];
+        this.agent = new QLearningAgent(this.states, this.actions);
         
-        // Run training episodes
-        for (let episode = 0; episode < 100; episode++) {
-            grid.reset();
+        this.isTraining = false;
+        this.episodeCount = 0;
+        this.stepCount = 0;
+        this.currentReward = 0;
+        
+        this.setupEventListeners();
+        this.draw();
+    }
+    
+    setupEventListeners() {
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.toggleTraining());
+        }
+        
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.reset());
+        }
+    }
+    
+    toggleTraining() {
+        this.isTraining = !this.isTraining;
+        const btn = document.getElementById('startBtn');
+        if (btn) {
+            btn.textContent = this.isTraining ? '暂停训练' : '开始训练';
+            btn.style.background = this.isTraining ? '#ff9800' : '#ff6b6b';
+        }
+        
+        if (this.isTraining) {
+            this.train();
+        }
+    }
+    
+    train() {
+        if (!this.isTraining) return;
+        
+        // 每帧训练多个 episode 以加速
+        for (let ep = 0; ep < 5; ep++) {
+            this.grid.reset();
             let steps = 0;
+            let episodeReward = 0;
             
-            while (!grid.isTerminal() && steps < 100) {
-                const state = grid.getState();
-                const action = agent.chooseAction(state);
-                grid.move(action);
-                const reward = grid.getReward();
-                const nextState = grid.getState();
+            while (!this.grid.isTerminal() && steps < 100) {
+                const state = this.grid.getState();
+                const action = this.agent.chooseAction(state);
+                const moveReward = this.grid.move(action);
+                const reward = this.grid.getReward() + moveReward;
+                const nextState = this.grid.getState();
                 
-                agent.learn(state, action, reward, nextState);
+                this.agent.learn(state, action, reward, nextState);
+                episodeReward += reward;
                 steps++;
             }
+            
+            this.episodeCount++;
+            this.stepCount += steps;
+            this.currentReward = episodeReward;
         }
         
-        // Show final policy
-        updateGridDisplay(grid, agent);
+        this.updateStats();
+        this.draw();
+        
+        // 继续训练
+        if (this.isTraining) {
+            requestAnimationFrame(() => this.train());
+        }
     }
     
-    function updateGridDisplay(grid, agent) {
-        gridContainer.innerHTML = '';
-        const cellSize = 60;
+    reset() {
+        this.isTraining = false;
+        this.episodeCount = 0;
+        this.stepCount = 0;
+        this.currentReward = 0;
         
-        for (let y = 0; y < grid.height; y++) {
-            for (let x = 0; x < grid.width; x++) {
-                const cell = document.createElement('div');
-                cell.className = 'grid-cell';
-                cell.style.width = `${cellSize}px`;
-                cell.style.height = `${cellSize}px`;
+        // 重置 Q 表
+        this.agent = new QLearningAgent(this.states, this.actions);
+        
+        const btn = document.getElementById('startBtn');
+        if (btn) {
+            btn.textContent = '开始训练';
+            btn.style.background = '#ff6b6b';
+        }
+        
+        this.updateStats();
+        this.draw();
+    }
+    
+    updateStats() {
+        const epEl = document.getElementById('episodeCount');
+        const stepEl = document.getElementById('stepCount');
+        const rewardEl = document.getElementById('currentReward');
+        
+        if (epEl) epEl.textContent = this.episodeCount;
+        if (stepEl) stepEl.textContent = this.stepCount;
+        if (rewardEl) rewardEl.textContent = this.currentReward.toFixed(2);
+    }
+    
+    draw() {
+        if (!this.ctx) return;
+        
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        
+        // 清空画布
+        this.ctx.fillStyle = '#f5f5f5';
+        this.ctx.fillRect(0, 0, w, h);
+        
+        // 绘制网格
+        for (let y = 0; y < this.grid.height; y++) {
+            for (let x = 0; x < this.grid.width; x++) {
+                const cellX = x * this.cellSize;
+                const cellY = y * this.cellSize;
                 
-                const state = `${x},${y}`;
-                if (x === grid.goalPos.x && y === grid.goalPos.y) {
-                    cell.textContent = '🎯';
-                    cell.style.backgroundColor = '#4CAF50';
-                } else if (x === 0 && y === 0) {
-                    cell.textContent = '🤖';
-                    cell.style.backgroundColor = '#2196F3';
-                } else {
-                    // Show best action as arrow
-                    const qValues = agent.qTable[state];
+                // 绘制单元格背景
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(cellX + 2, cellY + 2, this.cellSize - 4, this.cellSize - 4);
+                
+                // 绘制障碍物
+                const isObstacle = this.grid.obstacles.some(obs => 
+                    obs.x === x && obs.y === y
+                );
+                if (isObstacle) {
+                    this.ctx.fillStyle = '#9e9e9e';
+                    this.ctx.fillRect(cellX + 2, cellY + 2, this.cellSize - 4, this.cellSize - 4);
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = '30px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText('🚫', cellX + this.cellSize/2, cellY + this.cellSize/2);
+                }
+                
+                // 绘制目标
+                if (x === this.grid.goalPos.x && y === this.grid.goalPos.y) {
+                    this.ctx.fillStyle = '#4CAF50';
+                    this.ctx.fillRect(cellX + 2, cellY + 2, this.cellSize - 4, this.cellSize - 4);
+                    this.ctx.font = '30px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText('🎯', cellX + this.cellSize/2, cellY + this.cellSize/2);
+                }
+                
+                // 绘制智能体
+                if (x === this.grid.agentPos.x && y === this.grid.agentPos.y) {
+                    this.ctx.fillStyle = '#2196F3';
+                    this.ctx.beginPath();
+                    this.ctx.arc(cellX + this.cellSize/2, cellY + this.cellSize/2, this.cellSize/3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.font = '24px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText('🤖', cellX + this.cellSize/2, cellY + this.cellSize/2);
+                }
+                
+                // 绘制策略箭头（如果已经训练过）
+                if (this.episodeCount > 0 && !isObstacle && 
+                    !(x === this.grid.goalPos.x && y === this.grid.goalPos.y)) {
+                    const state = `${x},${y}`;
+                    const qValues = this.agent.qTable[state];
                     let bestAction = 'right';
                     let bestValue = qValues[bestAction];
                     
-                    ['up', 'down', 'left', 'right'].forEach(action => {
+                    this.actions.forEach(action => {
                         if (qValues[action] > bestValue) {
                             bestValue = qValues[action];
                             bestAction = action;
@@ -177,68 +307,46 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     const arrows = {
                         'up': '↑',
-                        'down': '↓', 
+                        'down': '↓',
                         'left': '←',
                         'right': '→'
                     };
-                    cell.textContent = arrows[bestAction];
-                    cell.style.backgroundColor = '#f5f5f5';
+                    
+                    this.ctx.fillStyle = 'rgba(33, 150, 243, 0.6)';
+                    this.ctx.font = 'bold 36px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(arrows[bestAction], cellX + this.cellSize/2, cellY + this.cellSize/2);
                 }
                 
-                gridContainer.appendChild(cell);
+                // 绘制网格线
+                this.ctx.strokeStyle = '#ddd';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(cellX + 2, cellY + 2, this.cellSize - 4, this.cellSize - 4);
             }
-            gridContainer.appendChild(document.createElement('br'));
         }
+        
+        // 绘制图例
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillStyle = '#333';
+        this.ctx.fillText('🤖 智能体', 10, h - 45);
+        this.ctx.fillText('🎯 目标', 10, h - 25);
+        this.ctx.fillText('🚫 障碍物', w - 100, h - 45);
+        this.ctx.fillText('↑↓←→ 策略', w - 100, h - 25);
+    }
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing Grid World Demo...');
+    
+    // 检查 canvas 是否存在
+    const canvas = document.getElementById('gridCanvas');
+    if (canvas) {
+        window.gridVisualizer = new GridWorldVisualizer('gridCanvas');
+        console.log('Grid World Demo initialized successfully!');
+    } else {
+        console.error('Grid canvas not found in DOM');
     }
 });
-
-// Algorithm comparison data
-const algorithms = {
-    'Q-Learning': {
-        type: 'Model-free, Off-policy',
-        description: 'Learns action-value function Q(s,a) directly from experience',
-        pros: ['Simple to implement', 'Guaranteed convergence', 'Works well for discrete spaces'],
-        cons: ['Struggles with large state spaces', 'Requires discretization']
-    },
-    'Deep Q-Networks (DQN)': {
-        type: 'Model-free, Off-policy',
-        description: 'Uses neural networks to approximate Q-function for high-dimensional inputs',
-        pros: ['Handles continuous/large state spaces', 'End-to-end learning', 'Successful in complex domains'],
-        cons: ['Computationally expensive', 'Can be unstable', 'Requires careful hyperparameter tuning']
-    },
-    'Policy Gradient': {
-        type: 'Model-free, On-policy',
-        description: 'Directly optimizes policy parameters using gradient ascent',
-        pros: ['Naturally handles stochastic policies', 'Good for continuous action spaces'],
-        cons: ['High variance', 'Sample inefficient', 'Convergence can be slow']
-    },
-    'Actor-Critic': {
-        type: 'Model-free, On-policy',
-        description: 'Combines value-based and policy-based methods',
-        pros: ['Lower variance than pure policy gradient', 'More sample efficient'],
-        cons: ['More complex to implement', 'Requires balancing two networks']
-    },
-    'PPO': {
-        type: 'Model-free, On-policy',
-        description: 'Uses clipped probability ratios for stable policy updates',
-        pros: ['Stable and reliable', 'Good sample efficiency', 'Widely used in practice'],
-        cons: ['Still requires many samples', 'Hyperparameter sensitive']
-    }
-};
-
-// Interactive algorithm selector
-function showAlgorithmDetails(algoName) {
-    const detailsDiv = document.getElementById('algorithmDetails');
-    if (!detailsDiv || !algorithms[algoName]) return;
-    
-    const algo = algorithms[algoName];
-    detailsDiv.innerHTML = `
-        <h3>${algoName}</h3>
-        <p><strong>Type:</strong> ${algo.type}</p>
-        <p><strong>Description:</strong> ${algo.description}</p>
-        <p><strong>Pros:</strong></p>
-        <ul>${algo.pros.map(p => `<li>${p}</li>`).join('')}</ul>
-        <p><strong>Cons:</strong></p>
-        <ul>${algo.cons.map(c => `<li>${c}</li>`).join('')}</ul>
-    `;
-}
