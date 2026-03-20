@@ -127,9 +127,19 @@ L(θ) = E[min(rₜ(θ)Âₜ, clip(rₜ(θ), 1-ε, 1+ε)Âₜ)]</code></pre>
 
         <section id="demo">
             <h2>交互式演示</h2>
-            <p>下面是一个简单的网格世界强化学习演示：</p>
             
-            <div id="grid-world-demo">
+            <!-- 演示选择器 -->
+            <div class="demo-selector">
+                <button class="demo-tab active" data-demo="gridworld">🎯 网格世界 (Q-Learning)</button>
+                <button class="demo-tab" data-demo="bandit">🎰 多臂老虎机</button>
+                <button class="demo-tab" data-demo="dqn">🧠 DQN 演示</button>
+                <button class="demo-tab" data-demo="policy">📈 策略梯度</button>
+            </div>
+            
+            <!-- 网格世界演示 -->
+            <div id="gridworld-demo" class="demo-panel active">
+                <h3>Q-Learning 网格世界</h3>
+                <p>智能体学习如何避开障碍物到达目标。蓝色箭头显示学习到的最优策略。</p>
                 <canvas id="gridCanvas" width="400" height="400"></canvas>
                 <div class="controls">
                     <button id="startBtn">开始训练</button>
@@ -138,6 +148,119 @@ L(θ) = E[min(rₜ(θ)Âₜ, clip(rₜ(θ), 1-ε, 1+ε)Âₜ)]</code></pre>
                         <p>Episode: <span id="episodeCount">0</span></p>
                         <p>Steps: <span id="stepCount">0</span></p>
                         <p>Reward: <span id="currentReward">0</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 多臂老虎机演示 -->
+            <div id="bandit-demo" class="demo-panel">
+                <h3>🎰 多臂老虎机 (Multi-Armed Bandit)</h3>
+                <p>理解探索与利用的权衡。每个老虎机有不同的获奖概率，找出最优策略！</p>
+                <div class="bandit-container">
+                    <div id="bandits" class="bandits"></div>
+                    <div class="bandit-controls">
+                        <button id="banditPlayBtn">玩一次</button>
+                        <button id="banditAutoBtn">自动播放</button>
+                        <button id="banditResetBtn">重置</button>
+                    </div>
+                    <div id="banditStats" class="bandit-stats">
+                        <p>总次数：<span id="totalPulls">0</span></p>
+                        <p>总奖励：<span id="totalReward">0</span></p>
+                        <p>策略：<span id="banditStrategy">ε-greedy</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DQN 演示 -->
+            <div id="dqn-demo" class="demo-panel">
+                <h3>🧠 深度 Q 网络 (DQN)</h3>
+                <p>使用神经网络近似 Q 函数的深度强化学习。观察网络如何学习状态 - 动作值。</p>
+                <div class="dqn-container">
+                    <canvas id="dqnCanvas" width="500" height="300"></canvas>
+                    <div class="dqn-network">
+                        <h4>网络结构</h4>
+                        <div class="network-viz">
+                            <div class="layer">
+                                <span>输入层</span>
+                                <div class="neurons input">
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                </div>
+                            </div>
+                            <div class="layer">
+                                <span>隐藏层</span>
+                                <div class="neurons hidden">
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                    <div class="neuron"></div>
+                                </div>
+                            </div>
+                            <div class="layer">
+                                <span>输出层</span>
+                                <div class="neurons output">
+                                    <div class="neuron">↑</div>
+                                    <div class="neuron">↓</div>
+                                    <div class="neuron">←</div>
+                                    <div class="neuron">→</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button id="dqnStartBtn">开始训练</button>
+                        <button id="dqnResetBtn">重置</button>
+                        <div id="dqnStats">
+                            <p>Loss: <span id="dqnLoss">0.00</span></p>
+                            <p>Episode: <span id="dqnEpisode">0</span></p>
+                            <p>ε: <span id="dqnEpsilon">0.00</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 策略梯度演示 -->
+            <div id="policy-demo" class="demo-panel">
+                <h3>📈 策略梯度 (Policy Gradient)</h3>
+                <p>直接优化策略参数，学习动作概率分布。观察策略如何随训练演变。</p>
+                <div class="policy-container">
+                    <canvas id="policyCanvas" width="500" height="300"></canvas>
+                    <div class="policy-viz">
+                        <h4>策略分布</h4>
+                        <div id="policyBars" class="policy-bars">
+                            <div class="policy-bar">
+                                <span>上</span>
+                                <div class="bar"><div class="fill" id="bar-up"></div></div>
+                                <span id="prob-up">25%</span>
+                            </div>
+                            <div class="policy-bar">
+                                <span>下</span>
+                                <div class="bar"><div class="fill" id="bar-down"></div></div>
+                                <span id="prob-down">25%</span>
+                            </div>
+                            <div class="policy-bar">
+                                <span>左</span>
+                                <div class="bar"><div class="fill" id="bar-left"></div></div>
+                                <span id="prob-left">25%</span>
+                            </div>
+                            <div class="policy-bar">
+                                <span>右</span>
+                                <div class="bar"><div class="fill" id="bar-right"></div></div>
+                                <span id="prob-right">25%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button id="policyStartBtn">开始训练</button>
+                        <button id="policyResetBtn">重置</button>
+                        <div id="policyStats">
+                            <p>Episode: <span id="policyEpisode">0</span></p>
+                            <p>平均奖励：<span id="policyReward">0.00</span></p>
+                        </div>
                     </div>
                 </div>
             </div>
