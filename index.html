@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>强化学习算法指南</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -130,24 +131,58 @@ L(θ) = E[min(rₜ(θ)Âₜ, clip(rₜ(θ), 1-ε, 1+ε)Âₜ)]</code></pre>
             
             <!-- 演示选择器 -->
             <div class="demo-selector">
-                <button class="demo-tab active" data-demo="gridworld">🎯 网格世界 (Q-Learning)</button>
+                <button class="demo-tab active" data-demo="gridworld">🎯 网格世界</button>
                 <button class="demo-tab" data-demo="bandit">🎰 多臂老虎机</button>
-                <button class="demo-tab" data-demo="dqn">🧠 DQN 演示</button>
+                <button class="demo-tab" data-demo="dqn">🧠 DQN</button>
                 <button class="demo-tab" data-demo="policy">📈 策略梯度</button>
+                <button class="demo-tab" data-demo="cartpole">🤸 CartPole</button>
+                <button class="demo-tab" data-demo="mountaincar">🚗 MountainCar</button>
+                <button class="demo-tab" data-demo="cliffwalking">⚠️ CliffWalking</button>
             </div>
             
             <!-- 网格世界演示 -->
             <div id="gridworld-demo" class="demo-panel active">
                 <h3>Q-Learning 网格世界</h3>
                 <p>智能体学习如何避开障碍物到达目标。蓝色箭头显示学习到的最优策略。</p>
-                <canvas id="gridCanvas" width="400" height="400"></canvas>
+                
+                <!-- 超参数调节器 -->
+                <div class="hyperparams-panel">
+                    <h4>⚙️ 超参数调节</h4>
+                    <div class="slider-group">
+                        <label>学习率 (α): <span id="lrValue">0.1</span></label>
+                        <input type="range" id="lrSlider" min="0.01" max="1" step="0.01" value="0.1">
+                    </div>
+                    <div class="slider-group">
+                        <label>折扣因子 (γ): <span id="gammaValue">0.9</span></label>
+                        <input type="range" id="gammaSlider" min="0" max="0.99" step="0.01" value="0.9">
+                    </div>
+                    <div class="slider-group">
+                        <label>探索率 (ε): <span id="epsilonValue">0.1</span></label>
+                        <input type="range" id="epsilonSlider" min="0" max="1" step="0.01" value="0.1">
+                    </div>
+                    <div class="slider-group">
+                        <label>训练速度：<span id="speedValue">1x</span></label>
+                        <input type="range" id="speedSlider" min="1" max="50" step="1" value="1">
+                    </div>
+                </div>
+                
+                <div class="demo-content">
+                    <canvas id="gridCanvas" width="400" height="400"></canvas>
+                    <div class="chart-container">
+                        <canvas id="rewardChart"></canvas>
+                    </div>
+                </div>
+                
                 <div class="controls">
                     <button id="startBtn">开始训练</button>
                     <button id="resetBtn">重置</button>
+                    <button id="saveBtn">💾 保存模型</button>
+                    <button id="loadBtn">📂 加载模型</button>
                     <div id="stats">
                         <p>Episode: <span id="episodeCount">0</span></p>
                         <p>Steps: <span id="stepCount">0</span></p>
                         <p>Reward: <span id="currentReward">0</span></p>
+                        <p>平均奖励：<span id="avgReward">0</span></p>
                     </div>
                 </div>
             </div>
@@ -260,6 +295,63 @@ L(θ) = E[min(rₜ(θ)Âₜ, clip(rₜ(θ), 1-ε, 1+ε)Âₜ)]</code></pre>
                         <div id="policyStats">
                             <p>Episode: <span id="policyEpisode">0</span></p>
                             <p>平均奖励：<span id="policyReward">0.00</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CartPole 演示 -->
+            <div id="cartpole-demo" class="demo-panel">
+                <h3>🤸 CartPole 倒立摆</h3>
+                <p>经典控制问题：通过左右移动小车来平衡杆子。杆子倒下或超出边界则 episode 结束。</p>
+                <div class="env-container">
+                    <canvas id="cartpoleCanvas" width="500" height="300"></canvas>
+                    <div class="env-controls">
+                        <button id="cartpoleStartBtn">开始训练</button>
+                        <button id="cartpoleResetBtn">重置</button>
+                        <div class="env-stats">
+                            <p>Episode: <span id="cartpoleEpisode">0</span></p>
+                            <p>当前步数：<span id="cartpoleSteps">0</span></p>
+                            <p>最长存活：<span id="cartpoleBest">0</span></p>
+                            <p>角度：<span id="cartpoleAngle">0°</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MountainCar 演示 -->
+            <div id="mountaincar-demo" class="demo-panel">
+                <h3>🚗 MountainCar 山地车</h3>
+                <p>小车动力不足，需要利用动量冲上山坡。学习来回摆动积累能量！</p>
+                <div class="env-container">
+                    <canvas id="mountaincarCanvas" width="600" height="300"></canvas>
+                    <div class="env-controls">
+                        <button id="mountaincarStartBtn">开始训练</button>
+                        <button id="mountaincarResetBtn">重置</button>
+                        <div class="env-stats">
+                            <p>Episode: <span id="mountaincarEpisode">0</span></p>
+                            <p>位置：<span id="mountaincarPos">-0.5</span></p>
+                            <p>速度：<span id="mountaincarVel">0.00</span></p>
+                            <p>到达山顶：<span id="mountaincarSuccess">0</span> 次</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cliff Walking 演示 -->
+            <div id="cliffwalking-demo" class="demo-panel">
+                <h3>⚠️ Cliff Walking 悬崖行走</h3>
+                <p>从起点到终点，但要避开悬崖！掉下悬崖会有巨大惩罚。学习最短安全路径。</p>
+                <div class="env-container">
+                    <canvas id="cliffCanvas" width="500" height="300"></canvas>
+                    <div class="env-controls">
+                        <button id="cliffStartBtn">开始训练</button>
+                        <button id="cliffResetBtn">重置</button>
+                        <div class="env-stats">
+                            <p>Episode: <span id="cliffEpisode">0</span></p>
+                            <p>掉下悬崖：<span id="cliffFalls">0</span></p>
+                            <p>平均奖励：<span id="cliffReward">0</span></p>
+                            <p>成功率：<span id="cliffSuccess">0%</span></p>
                         </div>
                     </div>
                 </div>
