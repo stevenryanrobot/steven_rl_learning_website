@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强化学习算法指南</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>🎯 强化学习算法指南</h1>
+        <p>从基础概念到高级算法的完整学习路径</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#introduction">简介</a></li>
+            <li><a href="#concepts">核心概念</a></li>
+            <li><a href="#algorithms">算法详解</a></li>
+            <li><a href="#demo">交互演示</a></li>
+            <li><a href="#resources">资源</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="introduction">
+            <h2>什么是强化学习？</h2>
+            <p>强化学习（Reinforcement Learning, RL）是一种机器学习范式，其中智能体（Agent）通过与环境（Environment）的交互来学习最优策略（Policy）。智能体在每个时间步观察当前状态（State），选择一个动作（Action），然后接收来自环境的奖励（Reward）并转移到新状态。</p>
+            
+            <div class="formula">
+                <h3>马尔可夫决策过程 (MDP)</h3>
+                <p>强化学习问题通常被建模为马尔可夫决策过程：</p>
+                <p><strong>G = (S, A, P, R, γ)</strong></p>
+                <ul>
+                    <li><strong>S</strong>: 状态空间</li>
+                    <li><strong>A</strong>: 动作空间</li>
+                    <li><strong>P(s'|s,a)</strong>: 状态转移概率</li>
+                    <li><strong>R(s,a,s')</strong>: 奖励函数</li>
+                    <li><strong>γ</strong>: 折扣因子 (0 ≤ γ ≤ 1)</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="concepts">
+            <h2>核心概念</h2>
+            
+            <div class="concept-card">
+                <h3>🎯 智能体 (Agent)</h3>
+                <p>学习者和决策者，负责选择动作以最大化累积奖励。</p>
+            </div>
+            
+            <div class="concept-card">
+                <h3>🌍 环境 (Environment)</h3>
+                <p>智能体交互的外部世界，提供状态和奖励反馈。</p>
+            </div>
+            
+            <div class="concept-card">
+                <h3>📊 策略 (Policy)</h3>
+                <p>π(a|s) - 在给定状态下选择动作的概率分布。</p>
+            </div>
+            
+            <div class="concept-card">
+                <h3>💰 价值函数 (Value Function)</h3>
+                <p>V^π(s) - 从状态s开始，遵循策略π的期望累积奖励。</p>
+            </div>
+            
+            <div class="concept-card">
+                <h3>⚖️ Q函数 (Q-Function)</h3>
+                <p>Q^π(s,a) - 在状态s执行动作a后，遵循策略π的期望累积奖励。</p>
+            </div>
+        </section>
+
+        <section id="algorithms">
+            <h2>经典强化学习算法</h2>
+            
+            <div class="algorithm-section">
+                <h3>1. Q-Learning (表格型)</h3>
+                <p>一种无模型的时序差分学习算法，直接学习最优Q值函数。</p>
+                <div class="code-block">
+                    <pre><code>// Q-Learning 更新规则
+Q(s,a) ← Q(s,a) + α[r + γ·maxₐ' Q(s',a') - Q(s,a)]</code></pre>
+                </div>
+                <p><strong>特点：</strong>离策略学习，适用于离散状态-动作空间</p>
+            </div>
+
+            <div class="algorithm-section">
+                <h3>2. Deep Q-Networks (DQN)</h3>
+                <p>使用深度神经网络近似Q函数，结合经验回放和目标网络稳定训练。</p>
+                <div class="code-block">
+                    <pre><code>// DQN 损失函数
+L(θ) = E[(r + γ·maxₐ' Q(s',a';θ⁻) - Q(s,a;θ))²]</code></pre>
+                </div>
+                <p><strong>关键技术：</strong>经验回放、目标网络、ε-greedy探索</p>
+            </div>
+
+            <div class="algorithm-section">
+                <h3>3. Policy Gradient</h3>
+                <p>直接优化策略参数，通过梯度上升最大化期望回报。</p>
+                <div class="code-block">
+                    <pre><code>// REINFORCE 算法
+∇J(θ) = E[∇log π(a|s;θ) · Gₜ]</code></pre>
+                </div>
+                <p><strong>优势：</strong>适用于连续动作空间，端到端学习</p>
+            </div>
+
+            <div class="algorithm-section">
+                <h3>4. Actor-Critic</h3>
+                <p>结合值函数方法和策略梯度方法，Actor学习策略，Critic评估动作价值。</p>
+                <div class="code-block">
+                    <pre><code>// Advantage Actor-Critic
+A(s,a) = Q(s,a) - V(s)
+Actor: ∇J(θ) = E[∇log π(a|s;θ) · A(s,a)]
+Critic: TD-error = r + γV(s') - V(s)</code></pre>
+                </div>
+            </div>
+
+            <div class="algorithm-section">
+                <h3>5. Proximal Policy Optimization (PPO)</h3>
+                <p>现代策略优化算法，通过裁剪概率比率确保策略更新的稳定性。</p>
+                <div class="code-block">
+                    <pre><code>// PPO 目标函数
+L(θ) = E[min(rₜ(θ)Âₜ, clip(rₜ(θ), 1-ε, 1+ε)Âₜ)]</code></pre>
+                </div>
+                <p><strong>优势：</strong>样本效率高，训练稳定，广泛应用于实际场景</p>
+            </div>
+        </section>
+
+        <section id="demo">
+            <h2>交互式演示</h2>
+            <p>下面是一个简单的网格世界强化学习演示：</p>
+            
+            <div id="grid-world-demo">
+                <canvas id="gridCanvas" width="400" height="400"></canvas>
+                <div class="controls">
+                    <button id="startBtn">开始训练</button>
+                    <button id="resetBtn">重置</button>
+                    <div id="stats">
+                        <p>Episode: <span id="episodeCount">0</span></p>
+                        <p>Steps: <span id="stepCount">0</span></p>
+                        <p>Reward: <span id="currentReward">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="resources">
+            <h2>学习资源</h2>
+            <div class="resource-list">
+                <h3>📚 经典教材</h3>
+                <ul>
+                    <li>"Reinforcement Learning: An Introduction" by Sutton & Barto</li>
+                    <li>"Deep Reinforcement Learning Hands-On" by Maxim Lapan</li>
+                </ul>
+                
+                <h3>💻 开源框架</h3>
+                <ul>
+                    <li>Stable Baselines3 (PyTorch)</li>
+                    <li>RLlib (Ray)</li>
+                    <li>TensorFlow Agents</li>
+                </ul>
+                
+                <h3>🎓 在线课程</h3>
+                <ul>
+                    <li>David Silver's RL Course (UCL)</li>
+                    <li>CS285: Deep Reinforcement Learning (Berkeley)</li>
+                    <li>DeepMind x UCL Lecture Series</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 强化学习算法指南 | Created with OpenClaw</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

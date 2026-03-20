@@ -1,0 +1,111 @@
+/* Reinforcement Learning Webpage Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    padding: 40px 0;
+    color: white;
+    background: rgba(0,0,0,0.3);
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #fff;
+    border-bottom: 3px solid #ff6b6b;
+    padding-bottom: 10px;
+    margin-top: 40px;
+}
+
+.algorithm-card {
+    background: white;
+    padding: 25px;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.algorithm-card:hover {
+    transform: translateY(-5px);
+}
+
+.code-block {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+}
+
+.grid-world {
+    display: grid;
+    grid-template-columns: repeat(5, 60px);
+    gap: 2px;
+    margin: 20px auto;
+    width: fit-content;
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    border: 2px solid #ddd;
+}
+
+.cell.start { background: #4CAF50; color: white; }
+.cell.goal { background: #2196F3; color: white; }
+.cell.wall { background: #9E9E9E; }
+.cell.agent { background: #FF9800; }
+
+.demo-container {
+    text-align: center;
+    margin: 30px 0;
+}
+
+button {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 10px;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: #ff5252;
+}
+
+footer {
+    text-align: center;
+    color: white;
+    padding: 20px;
+    margin-top: 40px;
+}
